@@ -1,27 +1,30 @@
-# MATH 6350 FINAL 
 # Name: Deep Patel
 
-setwd("C:\\Users\\deepp\\Google Drive\\MSDS\\MATH 6350 Data Mining")
+setwd("C:\\Users\\deepp\\Google Drive\\") #Set directory path
 getwd()
-obesityOR<- read.csv('ObesityDataSet.csv') # Obesity Data set
+obesityOR<- read.csv('ObesityDataSet.csv') # Loading Data set
 
+# Loading necessary libraries
 library(dplyr) 
+library(LICORS)
+
+# DATA CLEANING / WAREHOUSING- Lines 12 to 102
+
+obesity<- obesityOR  #Creating duplicate dataset
+colnames(obesity) #Checking column names
+colnames(obesity)[17]<- "Type"  #Renaming column
 
 
-obesity<- obesityOR
-colnames(obesity)
-colnames(obesity)[17]<- "Type"
-colnames(obesity)
-
-#Regrouping Classes
+#Regrouping Classes (by comibining similar types of classes for efficient classification analysis)
 filter_nonob<- ifelse(obesity$Type=="Insufficient_Weight"|obesity$Type=="Normal_Weight","Non-Obese", NA)
 filter_over<- ifelse(obesity$Type=="Overweight_Level_I" | obesity$Type=="Overweight_Level_II","Overweight", NA)
 filter_obesity<-ifelse((obesity$Type=="Obesity_Type_I" | obesity$Type=="Obesity_Type_II"|obesity$Type=="Obesity_Type_III"), "Obese", NA)
-
 obesity$Nonob<-filter_nonob
 obesity$over<- filter_over
 obesity$obese<- filter_obesity
 obesity$Classes<- coalesce(obesity$Nonob,obesity$over,obesity$obese)
+
+# Removing unnecessary columns
 obesity$Nonob<-NULL
 obesity$over<- NULL
 obesity$obese<- NULL
@@ -42,7 +45,7 @@ CL2<- CL2[complete.cases(CL2),]
 CL3<- CL2[complete.cases(CL3),]
 
 
-#Turning Categorical Variables into Numerical
+#Turning Categorical Variables into Numerical formachine learning
 #var 1- Gender
 Gender_Male<- ifelse(obesity$Gender=="Male",1,0)
 Gender_Female<- ifelse(obesity$Gender=="Female",1,0)
@@ -74,7 +77,6 @@ smoke_no<- ifelse(obesity$SMOKE=="no",1,0)
 obesity$Smoke_YES<- smoke_yes
 obesity$Smoke_NO<- smoke_no
 
-
 #var 10- SCC (Calorie consumption monitoring)
 scc_yes<- ifelse(obesity$SCC=="yes",1,0)
 scc_no<- ifelse(obesity$SCC=="no",1,0)
@@ -95,13 +97,13 @@ MTRANS_binary<- cbind(with(obesity, model.matrix(~ MTRANS + 0)))
 obesity3<- data.frame(obesity2,MTRANS_binary)
 colnames(obesity3)
 obesity_clean<- obesity3[,c(2,7,8,11,13,14,19,20,21,22,23:41,18)]
-#obesity_clean<- obesity3[,c(19,20,2,21,22,7,8,11,13,14,23:41,18)]
-colnames(obesity_clean)
+colnames(obesity_clean) #checking column names to make sure only relevant columns are kept
 
-#write.csv(obesity_clean, file='Obesity_Post-Binary.csv')
+write.csv(obesity_clean, file='Obesity_Post-Binary.csv')  #storing the clean dataset file
 
 obesity_clean<- read.csv('Obesity_Post-Binary.csv')
 
+# Adding small randomized perturbations to avoid too many ties error in KNN or K-means algorithm (due to binary features)
 obesity_features<- (obesity_clean[1:29]) 
 randnum<-function(){(1+((runif((2111*29), min=0, max=1)-0.5)/1000))}
 dim(obesity_features)
@@ -114,7 +116,7 @@ head(obesity_features[,1:6])
 obesity_num<- obesity_features*OB_SRP
 head(obesity_num[,25:29])
 
-#--- Normalization using LICORS--------------#
+#--- --------------#
 library(LICORS)
 SDATA<- normalize(data.matrix(obesity_num))
 head(S_obesity)
@@ -122,12 +124,8 @@ SDATA<- as.data.frame((SDATA))
 SDATA_OB<- cbind(SDATA,'Class'= obesity_clean$Classes)
 head(S_OBESITY)
 
-# write.csv(S_OBESITY, file='OBESITY_LICORS_Standardized_Pre-clone.csv')
+write.csv(S_OBESITY, file='OBESITY_LICORS_Normalized_Pre-clone.csv')
 #------------------------------------------------------------------------------------------------------
-
-OBESITY_mean_std <- sapply(obesity_num, function(obesity_num) 
-                    c( "Stand dev" = sd(obesity_num,na.rm=TRUE), 
-                        "Mean"= mean(obesity_num,na.rm=TRUE)))
 
 # Creating "SDATA" - standardized data set / Rescaled data matrix
 count = 0
