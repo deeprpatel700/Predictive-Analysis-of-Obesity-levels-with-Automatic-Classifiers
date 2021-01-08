@@ -10,7 +10,7 @@ Subsections:
 4. Summary table for best k clusters
 
 '''
-setwd("C:\\Users\\deepp\\Google Drive\\MSDS\\MATH 6350 Data Mining")
+setwd("C:\\Users\\deepp\\Google Drive")
 getwd()
 SDATA<- read.csv('Obesity_SDATA.csv') #reading the file
 
