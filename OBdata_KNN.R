@@ -12,7 +12,7 @@ Subsections:
 
 '''
 
-setwd("C:\\Users\\deepp\\Google Drive\\MSDS\\MATH 6350 Data Mining")
+setwd("C:\\Users\\deepp\\Google Drive")
 getwd()
 SDATA<- read.csv('Obesity_SDATA.csv') #reading the files
 SDATA_OB<- read.csv('OBESITY_Standardized_Pre-clone.csv')
