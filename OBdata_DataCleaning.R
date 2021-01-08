@@ -1,6 +1,6 @@
 # Name: Deep Patel
 
-setwd("C:\\Users\\deepp\\Google Drive\\MSDS\\MATH 6350 Data Mining")
+setwd("C:\\Users\\deepp\\Google Drive")
 getwd()
 obesityOR<- read.csv('ObesityDataSet.csv') # Obesity Data set
 
