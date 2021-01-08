@@ -11,7 +11,7 @@ Subsections
 
 '''
 
-setwd("C:\\Users\\deepp\\Google Drive\\MSDS\\MATH 6350 Data Mining")
+setwd("C:\\Users\\deepp\\Google Drive")
 getwd()
 obesity_clean<- read.csv('Obesity_Post-Binary.csv') #reading the file
 head(obesity_clean)   #Checking the dataset
