@@ -5,8 +5,13 @@ getwd()
 obesityOR<- read.csv('ObesityDataSet.csv') # Loading Data set
 
 # Loading necessary libraries
-library(dplyr) 
-library(LICORS)
+library(dplyr)  #for filtering data
+library(LICORS) #for normalization
+library(scatterplot3d) #for visualization
+library(lattice)  #for visualization  
+library(randomForest) #for random forest supervised learning
+
+
 
 # DATA CLEANING / WAREHOUSING- Lines 12 to 102
 
@@ -202,9 +207,7 @@ class_r<- case_when(SDATA_OB$Class=="Non-Obese"~"C1",
                     SDATA_OB$Class=="Overweight"~"C2",
                     SDATA_OB$Class=="Obese"~"C3")
 SDATA_OB$class<- class_r
-SDATA_OB[250:260,26:30]
 SDATA_OB$Class<- NULL
-
 
 C1<- filter(SDATA_OB, class =='C1')
 C2<- filter(SDATA_OB, class =='C2')
@@ -214,7 +217,8 @@ C3<- filter(SDATA_OB, class =='C3')
 
 #------------------------------------------------------------------------
 
-# This is the new feature data with only the principal components
+# This is the new feature data with only the principal components (PCA)
+
 NFDATA = preNFDATA[1:r95]
 colnames(NFDATA)
 
@@ -229,9 +233,9 @@ NFDATA_23<- filter(NFDATA, class== 'C2' | class=='C3')
 NFDATA_23$class= factor(NFDATA_23$class)
 
 levels(NFDATA_13$class)
-library(scatterplot3d)
 
-# 3D Plot - C1 vs. C2
+# 3D Plot - C1 vs. C2- Visualization for distribution between Class 1 and Class 2
+library(scatterplot3d)
 colors=c('darkgreen','red')
 scatterplot3d(NFDATA_12[,1], NFDATA_12[,2], NFDATA_12[,3],
               angle=55, pch=19, cex.symbols=I(.9),
@@ -248,7 +252,7 @@ legend("topright", legend = c('C1','C2'),
        horiz = F , 
        inset = c(0.1, 0.1))
 
-# 3D plot= C1 vs. C3
+# 3D plot= C1 vs. C3- Visualization for distribution between Class 1 and Class 3
 colors=c('darkgreen','blue')
 scatterplot3d(NFDATA_13[,1], NFDATA_13[,2], NFDATA_13[,3],
               angle=55, pch=16, cex.symbols=I(0.9)
@@ -265,7 +269,7 @@ legend("topright", legend = c('C1','C3'),
        horiz = F , 
        inset = c(0.1, 0.1))
 
-# 3D plot= C2 vs. C3
+# 3D plot= C2 vs. C3- Visualization for distribution between Class 2 and Class 3
 colors=c('red','blue')
 scatterplot3d(NFDATA_23[,1], NFDATA_23[,2], NFDATA_23[,3],
               angle=55, pch=16, color=colors[NFDATA_23[,18]],
@@ -291,33 +295,15 @@ p3DATA2$class = as.factor(NFDATA$class)
 # 3D Plot- Option 1
 cloud(V3 ~ V1 + V2, p3DATA, pch=1, groups=p3DATA2$class, 
       scales = list(arrows = FALSE), main = "3D plot, Y1 vs Y2 vs Y3", 
-      xlab = "Y1", ylab = "Y2", zlab = "Y3", 
+      xlab = "PC 1", ylab = "PC 2", zlab = "PC 3", 
       auto.key = list(title="Class", corner=c(.98, 1)))
 
-colors <- c('darkgreen','red','purple')
 
-# 3D Plot - Option 2
-scatterplot3d(p3DATA2[,1], p3DATA2[,2], p3DATA2[,3],
-              angle=25, pch=16, color=colors[p3DATA2[,4]],
-              main="3D Scatter Plot of PCs",
-              xlab = "PC1",ylab = "PC2",zlab = "PC3")
 
-legend("topright", legend = c('C1','C2','C3'),
-       col = colors, 
-       pch = 16, 
-       bty = "n", 
-       pt.cex = 1, 
-       cex = 0.85, 
-       text.col = "black", 
-       horiz = F , 
-       inset = c(0.1, 0.1))
 
-############################ QUESTION 1 DONE ################################
-# Use SDATA
 
-### Q2 Kmeans
-#pick_k = 200
-k_values = 17   #c(seq(1,9,3),seq(10,48,4),seq(50,100,10))
+### Kmeans
+k_values = c(seq(1,9,3),seq(10,48,4),seq(50,100,10))  #Testing broad range of k-values to determine best k-value from elbow method and rate of discriminaiton
 start_time <- Sys.time() # Start timer
 GINI_indexes_per = numeric(length(k_values))#pick_k
 GINI_indexes_full= numeric(length(k_values))
@@ -367,76 +353,60 @@ for (k in k_values){ #seq(1,pick_k)
   GINI_indexes_full[index] = impurity_clustering
   GINI_indexes_per[index] = percent_impurity 
 }
-Qm
-
-round(prob_dist_matrix,3)
-clusters_size
-out$withinss
-impurity_clustering
-Qm
 end_time <- Sys.time() # End timer
-
 kmeans_time = end_time - start_time
 print(kmeans_time)
 
-par(mar=c( 5.1,4.1,4.1,3.1))
+par(mar=c(5.1,4.1,4.1,3.1))
 par(mfrow=c(2,2))
-# Q(m) = sum(withinss)/total_disp
+
+# Plot for Elbow method to determine optimal k clusters
 plot(k_values,Qm,xlab = 'k Clusters', ylab = 'Q(m)dasdasd',
      main = 'Elbow Method for Clustering Quality',col='red', type='l',
      xaxt = 'n')
 axis(1,at = seq(1, 1000, by = 2), las=2)
 
+# Plot for Clustering performance to determine optimal k clusters
 plot(k_values,Perf.m,xlab = 'k Clusters', ylab = 'Perf(k)',
      main = 'Clustering Performance vs Number of Clusters',col='red', type='l',
      xaxt = 'n')
 axis(1,at = seq(1, 1000, by = 2), las=2)
 
+# Plot for GINI full impurity for each k run to determine optimal k clusters
 plot(k_values,GINI_indexes_full,xlab = 'k Clusters', ylab = 'GINI(k) full',
      main = 'GINI Full vs Number of Clusters',col='red', type='l',
      xaxt='n')
 axis(1,at = seq(1, 1000, by = 2), las=2)
 
+# Plot for GINI full impurity percentage for each k run to determine optimal k clusters
 plot(k_values,GINI_indexes_per,xlab = 'k Clusters', ylab = 'GINI(k) in %',
      main = 'GINI % vs Number of Clusters',col='red', type='l',
      xaxt='n')
 axis(1,at = seq(1, 1000, by = 2), las=2)
 par(mfrow=c(1,1))
 
-
-
-
-
-
-#---------------------
-
-#From elbow method, the best k=40
+#---------------------------------------------------------------------------------
+# Visualization of Centers for best k clusters
+#From elbow method, the best k=17
 k = 17
 out <- kmeans(SDATA, k, nstart=50, iter.max=50000)
 centers <-  out$centers
-out$size
 
-CORR_center <- cor(centers)
-Z_c = eigen(CORR_center)
-W_c <- Z_c$vectors # matrix W -> eigenvectors
-
-View(W_c)
+CORR_center <- cor(centers)  #Correlation Matrix of centers
+Z_c = eigen(CORR_center)     #eigenvalues of centers
+W_c <- Z_c$vectors           #eigenvectors of centers
 
 vectors_3D <- t(t(W_c[,1:3]) %*% t(centers))
 View(round(t(vectors_3D),2))
 colnames(vectors_3D) <- c('V1','V2','V3')
 rownames(vectors_3D) <- c('CEN1','CEN2','CEN3','CEN4','CEN5','CEN6','CEN7','CEN8','CEN9','CEN10',
-                          'CEN11','CEN12','CEN13','CEN14','CEN15','CEN16','CEN17','CEN18','CEN19','CEN20',
-                          'CEN21','CEN22','CEN23','CEN24','CEN25','CEN26','CEN27','CEN28','CEN29','CEN30',
-                          'CEN31','CEN32','CEN33','CEN34','CEN35','CEN36','CEN37','CEN38','CEN39','CEN40')
+                          'CEN11','CEN12','CEN13','CEN14','CEN15','CEN16','CEN17')
 vectors_3D
 
-# 3D plot of vectors
+# 3D plot of centroids
 library(scatterplot3d)
 colors = c('cyan', 'red', 'darkorange','black','blue','azure2', 'beige','bisque2','cornflowerblue','blue4',
-           'cornsilk2','brown','brown1','darkgoldenrod','darkgoldenrod1','darkgoldenrod3','darkgreen','thistle1','deepskyblue1','darkmagenta',
-           'dodgerblue3','firebrick','firebrick1','darkorchid1','darksalmon','gold','gold3','deeppink','deeppink3','gray48',
-           'gray44','gray84','green','green3','greenyellow','lightpink','orchid1','slategray1','yellow','tan')
+           'cornsilk2','brown','brown1','darkgoldenrod','darkgoldenrod1','darkgoldenrod3','darkgreen','thistle1','deepskyblue1','darkmagenta')
 colors = colors[1:k]
 legend.k = character(0)
 for(i in 1:k){
@@ -459,38 +429,22 @@ legend("topright", legend = legend.k,
        inset = c(0.1, 0.1))
 
 clusters_size <- out$size
-
 clusters_size
 bigCLU_index <- out$cluster == which(clusters_size == 372)  #TRY w/ 140 as well
 bigCLU_cases <- SDATA[bigCLU_index,]
 Smallgini_cases <- cbind(bigCLU_cases,'class'=SDATA_OB[bigCLU_index,]$class) 
 table(Smallgini_cases$class)
 
-write.csv(Smallgini_cases,file='SmallGINI_CASES.csv')
+write.csv(Smallgini_cases,file='SmallGINI_CASES.csv') 
 
-randrum2<- matrix(data=(1+((runif((nrow(bigCLU_cases)*29), min=0, max=1)-0.5)/5000))
-                  ,nrow=nrow(bigCLU_cases),ncol=29)
-bigCLU<- bigCLU_cases*randrum2
-dim(bigCLU_cases)
-dim(bigCLU)
-
-# Uncomment below lines if using bigCLU CORR w/ randrum
-CORR_bigCLU <- cor(bigCLU)
-Z_bigCLU = eigen(CORR_bigCLU)
-W_bigCLU <- Z_bigCLU$vectors # matrix W -> eigenvectors
-t.vectors_3D <- t(t(W_bigCLU[,1:3]) %*% t(bigCLU))
-
-# t.vectors_3D <- t(t(W[,1:3]) %*% t(bigCLU_cases))
-
+t.vectors_3D <- t(t(W[,1:3]) %*% t(bigCLU_cases))
 t.vectors_3D.df <- data.frame(t.vectors_3D)
 
 # Attaching class names to the matrix
 t.vectors_3D.df <- cbind(t.vectors_3D.df,'class'=SDATA_OB[bigCLU_index,]$class) 
 table(t.vectors_3D.df$class)
 
-# write.csv(t.vectors_3D.df,'bigCLU_times_corr.csv' )
 colors <- c('green','red','purple')
-
 scatterplot3d(t.vectors_3D[,1], t.vectors_3D[,2], t.vectors_3D[,3], angle=55, 
               pch=16, color=colors[factor(t.vectors_3D.df$class)],
               main="3D Scatter Plot of Cluster with Smallest GINI",
@@ -509,62 +463,9 @@ legend("topright", legend = c('C1','C2','C3'),
        horiz = F , 
        inset = c(0.1, 0.1))
 
-# Matrix for probability distribution of classes.
-var1 = character(0)
-for(i in 1:k){
-  var2 = paste('CLU', as.character(i), sep = "")
-  var1 = c(var1, var2)
-}
-
-prob_dist_matrix = matrix(nrow = k_values, ncol = 4, 
-                          dimnames = list(var1, c('C1%','C2%','C3%','gini_index')))
-for (i in clusters_size){
-  cluster_num = which(clusters_size == i)
-  cluster_index <- out$cluster == cluster_num # Indexes of cases belonging to a cluster
-  cluster_cases <- SDATA[cluster_index,]
-  # Adding column of class names
-  cluster <- cbind(cluster_cases,'class'=SDATA_OB[cluster_index,]$class) 
-  n_total_cases = dim(cluster['class'])[1]
-  dist_c1 = sum(cluster['class'] == 'C1')/n_total_cases
-  dist_c2 = sum(cluster['class'] == 'C2')/n_total_cases
-  dist_c3 = sum(cluster['class'] == 'C3')/n_total_cases
-  # Gini Index for a cluster. High purity when close to zero
-  gini_index = dist_c1*(1-dist_c1) + dist_c2*(1-dist_c2) + dist_c3*(1-dist_c3) 
-  prob_dist_cluster <- c(dist_c1,dist_c2,dist_c3,gini_index)
-  prob_dist_matrix[cluster_num,] = prob_dist_cluster
-}
-prob_dist_matrix
-impurity_clustering = sum(prob_dist_matrix[,'gini_index']) 
-clusters_size
-
-Ultimate_mat<- as.data.frame(prob_dist_matrix)
-size_dat<- as.data.frame(clusters_size)
-disp<- as.data.frame(out$withinss)
-Ultimate_mat$Size<- size_dat$clusters_size
-Ultimate_mat$`C1%`<- Ultimate_mat$`C1%`*100
-Ultimate_mat$`C2%`<- Ultimate_mat$`C2%`*100
-Ultimate_mat$`C3%`<- Ultimate_mat$`C3%`*100
-Ultimate_mat$Dispersion<- round(disp$`out$withinss`,0)
-Ultimate_mat$Topj<- FREQ[4,]
-head(Ultimate_mat)
-head(out$centers)
-colnames(Ultimate_mat)
-Ultimate_mat_ordered<- Ultimate_mat[,c(5,4,6,1,2,3,7)]
-head(Ultimate_mat_ordered)
-colnames(Ultimate_mat_ordered)[4]= 'C1% FREQ'
-colnames(Ultimate_mat_ordered)[5]= 'C2% FREQ'
-colnames(Ultimate_mat_ordered)[6]= 'C3% FREQ'
-colnames(Ultimate_mat_ordered)[7]= 'Top Class'
-View(round(Ultimate_mat_ordered,2))
-
 # Matrix of frequencies
 FREQ = matrix(nrow = 3, ncol = k_values, dimnames = list(c('C1','C2','C3'),
                                                   var1))
-clusters_size
-x=seq(1,k_values,by=1)
-plot(x,prob_dist_matrix[,'gini_index'],type='b') #GINI vs. K PLOT?
-
-
 for (j in seq(1:k_values)){
   cluster_index <- out$cluster == j # Indexes of cases belonging to a cluster
   cluster_cases <- SDATA[cluster_index,]
@@ -582,48 +483,35 @@ for (j in seq(1:k_values)){
 Topj = apply(FREQ,2,which.max) 
 FREQ <- rbind(FREQ,Topj)
 head(FREQ)
-nrow(cluster)
-#---------------
-Pred_n <- out$cluster
-# Use the Topj calculated to assign each cluster to a class. 
-for(i in seq(1:k_values)){
-  Pred_n[Pred_n == i] = paste("C", as.character(FREQ[4,i]), sep = "")
-}
 
-predicted_classes <- Pred_n
-true_classes <- SDATA_OB$class
+# Matrix of best k clusters, size of each cluster, dispersion, class frequencies within each cluster and top class in each cluster.
+Ultimate_mat<- as.data.frame(prob_dist_matrix)
+size_dat<- as.data.frame(clusters_size)
+disp<- as.data.frame(out$withinss)
+Ultimate_mat$Size<- size_dat$clusters_size
+Ultimate_mat$`C1%`<- Ultimate_mat$`C1%`*100
+Ultimate_mat$`C2%`<- Ultimate_mat$`C2%`*100
+Ultimate_mat$`C3%`<- Ultimate_mat$`C3%`*100
+Ultimate_mat$Dispersion<- round(disp$`out$withinss`,0)
+Ultimate_mat$Topj<- FREQ[4,]
+colnames(Ultimate_mat)
+Ultimate_mat_ordered<- Ultimate_mat[,c(5,4,6,1,2,3,7)]
+head(Ultimate_mat_ordered)
+colnames(Ultimate_mat_ordered)[4]= 'C1% FREQ'
+colnames(Ultimate_mat_ordered)[5]= 'C2% FREQ'
+colnames(Ultimate_mat_ordered)[6]= 'C3% FREQ'
+colnames(Ultimate_mat_ordered)[7]= 'Top Class'
+View(round(Ultimate_mat_ordered,2))
 
-#install.packages('caret')
-library(caret)
-conf_mat <- confusionMatrix(factor(predicted_classes),factor(true_classes),
-                            dnn = c("Prediction", "True"))
-CONF <- t(conf_mat$table) # Rows are true classes and columns are predicted
-CONF
-
-
-CONF_percent = CONF
-table(true_classes)
-table(predicted_classes)
-global_acc = conf_mat$overall[1]*100
-
-
-# Confusion matrix in %
-for(i in seq(1:3)){
-  for(j in seq(1:3)){
-    CONF_percent[j, i] = round(CONF[j, i]/sum(CONF[j, 1:3]), 4)*100
-  }
-}
-
-CONF_percent
-###################  Q2 & Q3 DONE ############################################
+###################  Random Forest Algorithm ############################################
 n1 = nrow(C1)
 n2 = nrow(C2)
 n3 = nrow(C3)
-
 head(SDATA_OB[,1:5])
 dim(SDATA_OB)
 SDATA_OB$class<- as.factor(SDATA_OB$class)
 
+# 80-20% Train/Test set for Random Forest supervised learning 
 
 SDATA_CL1 <- filter(SDATA_OB, class == 'C1')
 train1 <- sample(1:n1, 0.8*n1)
@@ -640,6 +528,7 @@ train3 <- sample(1:n3, 0.8*n3)
 trainCL3 <- SDATA_CL3[train3,]
 testCL3 <- SDATA_CL3[-train3,]
 
+# Making classes balanced for train and test set separately
 TRAINSET <- rbind(trainCL1,trainCL1,trainCL2,trainCL2,trainCL3)
 x.TRAINSET <- TRAINSET[-30]
 y.TRAINSET <- as.factor(TRAINSET[,30])
@@ -649,12 +538,12 @@ y.TESTSET <- as.factor(TESTSET[,30])
 
 table(y.TRAINSET)
 table(y.TESTSET)
-
-##################### QUESTION 4 DONE ###########################################
-
+#-----------------------------
 
 library(randomForest)
 colnames(TRAINSET)
+
+# Making RF function so that it can be used for differnt number of trees
 RF_func<- function(ntree){
   train_RF<- randomForest(class~., data=TRAINSET, 
                           ntree=ntree, mtry=round(sqrt(29),0), importance=TRUE)
@@ -692,6 +581,7 @@ RF1000<- RF_func(1000)
 
 RF100
 
+# Confusion Matrices for test set
 conf10<- conf_percentage(RF10$test_conf); conf10
 conf50<- conf_percentage(RF50$test_conf); conf50
 conf100<- conf_percentage(RF100$test_conf); conf100
@@ -702,6 +592,7 @@ conf500<- conf_percentage(RF500$test_conf); conf500
 conf750<- conf_percentage(RF750$test_conf); conf750
 conf1000<- conf_percentage(RF1000$test_conf); conf1000
 
+# Global Accuracy for Train Set (OOB) obtained from randomForest function for different number of ntrees.
 a10_train= accuracy(RF10$train_conf)
 a50_train= accuracy(RF50$train_conf)
 a100_train= accuracy(RF100$train_conf)
@@ -713,6 +604,7 @@ a750_train= accuracy(RF750$train_conf)
 a1000_train= accuracy(RF1000$train_conf)
 
 
+# Global accuracy of Test set for different number of ntrees.
 a10_test= accuracy(RF10$test_conf)
 a50_test= accuracy(RF50$test_conf)
 a100_test= accuracy(RF100$test_conf)
@@ -766,11 +658,11 @@ legend("bottomright", legend=c("C1","C2","C3"),
        col=c("blue","red","darkgreen"),lwd=1, inset=c(0.02,0.03))
 
 
-############################ QUESTION 5 & 6 DONE ########################################
+####################################################################
 
-bntr=400 #chosen after evaluating accuracy plots and confusion matrices
+bntr=500 #best number of trees chosen after evaluating accuracy plots and confusion matrices
 
-
+# Random forest for best number of trees
 bestRF<- randomForest(class~., data=TRAINSET, 
                       ntree=bntr, mtry=round(sqrt(29),0), importance=TRUE)
 bestRF.test<- predict(bestRF,x.TESTSET)
@@ -779,52 +671,28 @@ bestRF_conf<- conf_percentage(bestRF.test_conf)  #Confusion matrix of bestRF
 bestRF_conf
 accuracy(bestRF.test_conf)
 
-head(CORR[,1:6])
-L  #eigenvalues obtained from HW3 for post-PCA
-
-imp<- as.data.frame(importance(bestRF))
-imp_eigen<- data.frame(imp$MeanDecreaseGini,imp$MeanDecreaseAccuracy, L)
-head(imp_eigen)
+# Plot for ordered Importance of each feature 
 varImpPlot(bestRF) #shows that X1 is the most important feature followed by X3
-plot(imp_eigen$L, imp_eigen$imp.MeanDecreaseGini, 
-     xlab='Eigenvalues (L)', ylab='Importance by Mean Decrease Gini',
-     main="Importance of Features (PC's)", col='red', pch=3)
-plot(imp_eigen$L, imp_eigen$imp.MeanDecreaseAccuracy, 
-     xlab='Eigenvalues (L)', ylab='Importance by Mean Decrease Accuracy',
-     main="Importance of Features (PC's)", col='blue', pch=8, cex=1.5)
 
 # Mean Decrease Accuracy - How much the model accuracy decreases if we drop that variable.
-# Mean Decrease Gini - Measure of variable importance based on the Gini impurity index 
-# used for the calculation of splits in trees.
-# Higher the value of mean decrease accuracy or mean decrease gini score , 
-# higher the importance of the feature in the model. 
+# Mean Decrease Gini - Measure of variable importance based on the Gini impurity index used for the calculation of splits in trees.
+# Higher the value of mean decrease accuracy or mean decrease gini score, higher the importance of the feature in the model. 
 
-################# QUESTION 7 DONE #######################################
+######################################################
 
-#most important features across different classes
+# HISTOGRAM Visualization- most important feature across different classes
 par(mfrow=c(2,2))
 hist(C1$Age, breaks=10, xlim=c(-2,5), ylim=c(0,500), col='goldenrod')
 hist(C2$Age, breaks=10,  xlim=c(-2,5), ylim=c(0,500), col='goldenrod')
 hist(C3$Age, breaks=10, xlim=c(-2,5), ylim=c(0,500), col='goldenrod')
 
-#Plot NCP, FCVC if time
-
-#least important features
+#HISTOGRAM Visualization- least important features across different classees
 par(mfrow=c(2,2))
 hist(C1$CALCAlways, ylim=c(0,1000), breaks=2,col='lightpink')  
 hist(C2$CALCAlways, ylim=c(0,1000), breaks=2, col='lightpink')
 hist(C3$CALCAlways, ylim=c(0,1000), breaks=2, col='lightpink')
 
-# Plot MTRANSMotorbike and MTRANSBike if time
-
 #Dataframes for KS-test
-S_OBESITY12<- rbind(C1,C2)
-S_OBESITY13<- rbind(C1,C3)
-S_OBESITY23<- rbind(C2,C3)
-nrow(S_OBESITY12)
-nrow(S_OBESITY13)
-nrow(S_OBESITY23)
-
 ks.test(C1$Age,C2$Age,alternative = 'two.sided')
 ks.test(C1$Age,C3$Age,alternative = 'two.sided')
 ks.test(C2$Age,C3$Age,alternative = 'two.sided')
@@ -834,18 +702,12 @@ ks.test(C1$CALCAlways,C3$CALCAlways,alternative = 'two.sided')
 ks.test(C2$CALCAlways,C3$CALCAlways,alternative = 'two.sided')
 
 
-###################### Come back to QUESTION 8 ##############################
+####################################################
 clusters_size
-bigCLU_index <- out$cluster == which(clusters_size == 372)  #TRY w/ 372 as well
+bigCLU_index <- out$cluster == which(clusters_size == 372)  #obtained earlier in K-means analysis
 bigCLU_cases <- SDATA[bigCLU_index,]
 Smallgini_cases <- cbind(bigCLU_cases,'class'=SDATA_OB[bigCLU_index,]$class) 
 table(Smallgini_cases$class)
-
-
-
-dim(Smallgini_cases)
-table(Smallgini_cases$class)
-
 Smallgini_cases$class<- as.factor(Smallgini_cases$class)
 
 
@@ -870,11 +732,6 @@ sm.testCL2 <- smGINI_CL2[-sm.train2,]
 subtrain_CL2<- sm.trainCL2[rep(1:nrow(sm.trainCL2),3),]
 subtest_CL2<- sm.testCL2[rep(1:nrow(sm.testCL2),3),]
 
-# randrum3<- matrix(data=(1+((runif((nrow(sm.trainCL2)*29), min=0, max=1)-0.5)/5000))
-#                   ,nrow=nrow(sm.trainCL2),ncol=29)
-# sm.train2_num<- sm.trainCL2[-30]
-# train2clone<- randrum3*sm.train2_num
-# train2clone2<- randrum3*sm.train2_num
 
 smGINI_CL3 <- filter(Smallgini_cases, class == 'C3')
 sm.n3<- nrow(smGINI_CL3)
@@ -886,10 +743,8 @@ subtrainCL3<- sample(1:nrow(sm.trainCL3), (1/4)*nrow(sm.trainCL3))
 subtrain_CL3<- sm.trainCL3[subtrainCL3,]
 subtestCL3<- sample(1:nrow(sm.testCL3), (1/4)*nrow(sm.testCL3))
 subtest_CL3<- sm.testCL3[subtestCL3,]
-# subtrain_CL3<- sm.trainCL3[rep(1:nrow(sm.trainCL3),3),]
-# subtest_CL3<- sm.testCL3[rep(1:nrow(sm.testCL3),3),]
 
-
+# Comparison of only two classes with most pure cluster
 sm.TRAINSET <- rbind(subtrain_CL2,subtrain_CL3)
 sm.TESTSET <- rbind(subtest_CL2,subtest_CL3)
 
@@ -904,6 +759,7 @@ sm.TESTSET$class<- factor(sm.TESTSET$class)
 table(y.smTRAINSET)
 table(y.smTESTSET)
 
+# Random forest of cases within most pure cluster determined by K-means
 minGCL<-randomForest(class~., data=sm.TRAINSET, 
                      ntree=bntr, mtry=sqrt(29), importance=TRUE)
 minGCL.test<- predict(minGCL,x.smTESTSET)
@@ -912,8 +768,9 @@ minGCLtest_conf<- table('TRUE'=y.smTESTSET, 'PREDICTION'=minGCL.test)
 minGCLtest_conf
 conf_percentage(minGCLtest_conf)
 accuracy(minGCLtest_conf)
+
 ##################################################################
-#Question 10
+#Testing other clusters for Random forest
 clusters_size
 Ultimate_mat_ordered
 CLU_index <- out$cluster == which(clusters_size == Ultimate_mat_ordered$Size[8]) 
@@ -932,8 +789,7 @@ accuracy(SepRFtest_conf)
 
 
 #################################################################################
-# Question 11- SVM
-# Use SDATA_CL1 & SDATACL2
+#SVM using two classes
 
 svm.trainCL1<- trainCL1
 svm.trainCL3<- trainCL3
